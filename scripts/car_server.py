@@ -158,7 +158,7 @@ if __name__ == '__main__':
             #if not diff_car.isSending:
             #mutex.acquire()
             #i = 1
-            diff_car.update_status()  
+            # diff_car.update_status()  
             #print(diff_car.bus.status)
             #print("update times:",i)
             #i = i + 1
@@ -167,5 +167,5 @@ if __name__ == '__main__':
             # do notiong just update status
             #if i == 1:
                 #rospy.loginfo("car is in configure mode!")
-            diff_car.update_status()
+            # diff_car.update_status()
             #i = 0
