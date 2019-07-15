@@ -4,6 +4,7 @@
 from zlac706 import SpeedMotor
 from math import *
 import time
+import rospy
 
 import threading
 import time
@@ -19,17 +20,19 @@ def moterThread (motor_obj):
         motor_obj.send_motor()
         time.sleep(0.5)
 
-def moterRaedThread (motor1, motor2):
-    while True:
-        motor1.read_motor()
-        motor2.read_motor()
-        time.sleep(0.1)
+# def moterRaedThread (motor1, motor2):
+#     while True:
+#         motor1.read_motor()
+#         motor2.read_motor()
+#         time.sleep(0.1)
 
 class car(object):
     def __init__(self,wheel_diameter,wheel_distance):
         self.diameter = wheel_diameter
         self.distance = wheel_distance
-        self.odom = {'x':0,'y':0,'theta':0,'v':0,'w':0}
+        self.odom = {'x':0,'y':0,'th':0,'vx':0,'vy':0,'vth':0}
+        self.current_time = rospy.Time.now()
+        self.last_time = rospy.Time.now()
         self.isRunMode = False
         self.isSending = False
         self.motor = []
@@ -42,7 +45,7 @@ class car(object):
         try:
             motor1_thread = _thread.start_new(moterThread, (self.motor[0],))
             motor2_thread = _thread.start_new(moterThread, (self.motor[1],))
-            motor_read_thread = _thread.start_new(moterRaedThread, (self.motor[0],self.motor[1]))
+            # motor_read_thread = _thread.start_new(moterRaedThread, (self.motor[0],self.motor[1]))
         except:
             print("thread creation failed! program exit!")
             exit(0)
@@ -74,24 +77,16 @@ class car(object):
     
     # Get the speed and speed of the car
     def get_car_status(self):
+        self.motor[0].read_motor()
+        self.motor[1].read_motor()
         w1 = self.motor[0].rel_speed
         w2 = self.motor[1].rel_speed
-        print("odom check", w1, w2)
-        w = (w1+w2)*self.diameter/2/self.diameter
-        v = (w1-w2)*self.diameter/2
-        return [v,w]
+        #print("odom check", w1, w2)
+        vx = ((w1 + w2) / 2)
+        vy = 0
+        vth = ((w1 - w2)/self.distance)
+        return [vx,vy,vth]
     
-    # Set vehicle odom information
-    def set_odom(self):
-        dt = 0.05
-        #print("set odom")
-        v,w = self.get_car_status()
-        self.odom['x']= self.odom['x'] + v*dt*cos(self.odom['theta'])
-        self.odom['y']= self.odom['y'] + v*dt*sin(self.odom['theta'])
-        self.odom['theta'] = self.odom['theta'] + w*dt
-        self.odom['v'] = v
-        self.odom['w'] = w
-
     # Enter config mode, close bus
     def config_mode(self):
         self.motor[0].motor_stop()
@@ -109,7 +104,6 @@ class car(object):
     def update_status(self):
         self.motor[0].read_motor()
         self.motor[1].read_motor()
-        self.set_odom()
                 
 def test_set_car_vel(v,w):
     wheel_diameter = 0.100

@@ -17,9 +17,10 @@ from car_control import car
 from zlac706 import SpeedMotor
 import rospy
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 from std_msgs.msg import String
 import tf
+from math import sin, cos, pi
 
 import threading
 import time
@@ -30,31 +31,46 @@ except:
     
 mutex = threading.Lock()
 
-def odom_puber(odom_info,puber):
-    msg = Odometry()
-    msg.header.frame_id = 'odom_link'
-    msg.child_frame_id = 'base_link'
-    br = tf.TransformBroadcaster()
-    rate = rospy.Rate(20)
+def odom_puber(car,puber,broadcaster):
+    rate = rospy.Rate(0.1)
+
     while not rospy.is_shutdown():
+        car.current_time = rospy.Time.now()
+
+        msg = Odometry()
+        msg.header.frame_id = 'odom_link'
+        msg.child_frame_id = 'base_link'
         msg.header.seq = msg.header.seq + 1
-        msg.header.stamp = rospy.Time.now()
-        msg.pose.pose.position.x = odom_info['x']
-        msg.pose.pose.position.y = odom_info['y']
-        msg.pose.pose.position.z = 0
-        odom_qua = tf.transformations.quaternion_from_euler(0, 0, odom_info['theta'])
-        msg.pose.pose.orientation.x = odom_qua[0]
-        msg.pose.pose.orientation.y = odom_qua[1]
-        msg.pose.pose.orientation.z = odom_qua[2]
-        msg.pose.pose.orientation.w = odom_qua[3]
-        msg.twist.twist.linear.x = odom_info['v']
-        msg.twist.twist.angular.z = odom_info['w']
+        msg.header.stamp = car.current_time
+
+        vx,vy,vth = car.get_car_status()
+
+        dt = (car.current_time - car.last_time).to_sec()
+        delta_x = (vx * cos(car.odom['th']) - vy * sin(car.odom['th'])) * dt
+        delta_y = (vx * sin(car.odom['th']) + vy * cos(car.odom['th'])) * dt
+        delta_th = vth * dt
+
+        car.odom['x'] += delta_x
+        car.odom['y'] += delta_y
+        car.odom['th'] += delta_th
+
+        odom_quat = tf.transformations.quaternion_from_euler(0, 0, car.odom['th'])
+
+        broadcaster.sendTransform(
+            (car.odom['x'],car.odom['y'],0),
+            odom_quat, car.current_time, "base_link", "odom_link"
+        )
+
+        msg.pose.pose = Pose(Point(car.odom['x'], car.odom['y'], 0.), Quaternion(*odom_quat))
+
+        msg.twist.twist = Twist(Vector3(vx, vy, 0), Vector3(0, 0, vth))
+
         puber.publish(msg)
-        br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),"base_link","odom_link")
+        
+        car.last_time = car.current_time
         rate.sleep()
 
 def vel_callback(msg,arg):
-    start = time.time()
     diff_car = arg[0]
     #print(msg)
     # Processing speed, depending on the release speed of /cmd_vel.
@@ -73,8 +89,6 @@ def vel_callback(msg,arg):
         diff_car.set_car_vel(v,w)
             #mutex.release()
         #diff_car.isSending = False
-    #timepass = start - time.time()
-    #print("time pass is:",timepass)
         
  
 
@@ -103,7 +117,7 @@ if __name__ == '__main__':
 
     # car params
     if not rospy.has_param("~wheel_diameters"):
-        rospy.set_param("~wheel_diameter", 0.06)
+        rospy.set_param("~wheel_diameter", 0.12)
     if not rospy.has_param("~wheel_distance"):
         rospy.set_param("~wheel_distance", 0.3)
 
@@ -114,13 +128,14 @@ if __name__ == '__main__':
     diff_car.run_mode()
 
     # Create an odom release thread
-    odom_publisher = rospy.Publisher('/odom',Odometry,queue_size=10)
+    odom_publisher = rospy.Publisher('/odom', Odometry, queue_size=10)
+    odom_broadcaster = tf.TransformBroadcaster()
 
     # Create a subscriber for cmd_vel
     rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,))
     
     try:
-        odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))
+        odom_thread = _thread.start_new(odom_puber, (diff_car, odom_publisher, odom_broadcaster))
     except :
         rospy.loginfo("thread creation failed! program exit!")
         exit(0)
