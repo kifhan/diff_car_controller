@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
+from __future__ import division
 import serial
 import time
 import struct
@@ -16,6 +16,7 @@ class SpeedMotor:
         self.rel_speed = 0
         #Set the speed
         self.set_speed = 0
+        self.x_or_y_position = 0 
         # Operating status 
         self.run = False
         # Fault status
@@ -28,10 +29,10 @@ class SpeedMotor:
 
         # Set to speed mode
         self.serial.write(motor_speed_mode)
-        time.sleep(0.1)
+        #time.sleep(0.1)
                  #Set acceleration and deceleration
         self.serial.write(b'\x0A\x14\x14\x32')
-        time.sleep(0.1)
+        #time.sleep(0.1)
 
     def motor_speed_set(self):
         #print("set motor speed", self.set_speed)
@@ -41,7 +42,7 @@ class SpeedMotor:
 
     def set_status(self):
             self.serial.write(motor_status)
-            time.sleep(0.2)
+           # time.sleep(0.2)
 
     def motor_start(self):
         self.serial.write(motor_start)
@@ -56,10 +57,22 @@ class SpeedMotor:
         if n: # if there is data
             n = self.serial.read(n) # read n bits of data
             s = [ord(x) for x in bytes(n)]
-            print(s)
+            #print(s)
+            for i in range(int(len(s) / 4)):
+                addr = s[4 * i]
+                if addr == 228:
+                    high_data = s[4 * i + 1]
+                    if high_data > 128:
+                        high_data = high_data - 256
+                    low_data = s[4 * i + 2]
+                    self.rel_speed = (high_data*256 + low_data) * 6000 / 16384
+                    #print(self.rel_speed)
+        '''
             for i in range(len(s)):
                 s[i] = s[i]
+ 
             if len(s) == 32:
+                #print("CHECK",s)
                 for i in range(int(len(s) / 4)):
                     addr = s[4 * i]
                     if addr == 128:
@@ -80,36 +93,42 @@ class SpeedMotor:
                         elif s[2] == 64:
                             print("overload")
                     elif addr == 225:
-                        high_data = s[4 * i + 1]
                         low_data = s[4 * i + 2]
-                        self.voltage = high_data * 256 + low_data
-                        print("Voltage:" + str(self.voltage))
+                        self.voltage = low_data
+                        #print("Voltage:" + str(self.voltage))
                     elif addr == 226:
-                        high_data = s[4 * i + 1]
                         low_data = s[4 * i + 2]
-                        self.current = (int(high_data * 256 + low_data))/100
-                        print("current:" + str(self.current))
+                        self.current = low_data/100
+                        #print("current:" + str(self.current))
                     elif addr == 228:
                         # Output rotate speed
-                        high_data = s[4 * i + 1]
+                        #high_data = s[4 * i + 1]
                         low_data = s[4 * i + 2]
-                        self.rel_speed = (int(high_data * 256 + low_data))*6000 / 16384
-                        print("Speed:" + str(self.rel_speed))
+                        self.rel_speed = low_data * 6000 / 16384
+                        print(str(self.rel_speed))
+                        #print("Speed:" + str(self.rel_speed))
                     elif addr == 230:
-                        # Position High 16bits and Low 16bits
-                        None
+                        # Not working now
+                        None                         
                     elif addr == 231:
+                        # Not working now
                         None
                     elif addr == 232:
-                        # Position Feedback High 16bits and Low 16bits
-                        None
+                        # Position Feedback High 16bits
+                        upper_low_data = s[4 * i + 2]
+                        self.x_or_y_position_up = upper_low_data * 256
                     elif addr == 233:
-                        None
+                        lower_low_data = s[4 * i + 2]
+                        self.x_or_y_position_low = lower_low_data
+                        #print("Position:" + str(self.x_or_y_position_up + self.x_or_y_position_low)) 
+                        # Position Feedback Low 16bits
+                        
             elif len(s) == 2:
                 if s[0] == 6:
                     None
                     #print("Speed setting succeeded")
-
+        #return str(self.rel_speed)
+        '''
     def send_motor(self):
         if self.run:
             self.set_status()

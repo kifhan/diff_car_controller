@@ -13,7 +13,7 @@ The car server file is the client class of the car class and performs the follow
      The wheel is controlled using cmd_vel without action_server; therefore using a simple topic and service mechanism
 """
 
-from car_control import car
+from new_car_control import car
 from zlac706 import SpeedMotor
 import rospy
 from nav_msgs.msg import Odometry

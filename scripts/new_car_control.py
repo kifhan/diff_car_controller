@@ -14,15 +14,17 @@ except:
     
 mutex = threading.Lock()
 
-def moterThread (motor_obj):
+def motorThread (motor_obj):
     while True:
         motor_obj.send_motor()
         time.sleep(0.07)
 
-def moterRaedThread (motor1, motor2, car):
+def motorRaedThread (motor1, motor2, motor3, motor4, car):
     while True:
         motor1.read_motor()
         motor2.read_motor()
+        motor3.read_motor()
+        motor4.read_motor()
         car.set_odom()
         time.sleep(0.1)
 
@@ -38,14 +40,16 @@ class car(object):
         self.motor = []
         self.motor.append(SpeedMotor('/dev/ttyUSB0'))
         self.motor.append(SpeedMotor('/dev/ttyUSB1'))
-        # self.motor[2] = SpeedMotor('/dev/ttyUSB2')
-        # self.motor[3] = SpeedMotor('/dev/ttyUSB3')
+        self.motor.append(SpeedMotor('/dev/ttyUSB2'))
+        self.motor.append(SpeedMotor('/dev/ttyUSB3'))
         self.enable()
 
         try:
-            motor1_thread = _thread.start_new(moterThread, (self.motor[0],))
-            motor2_thread = _thread.start_new(moterThread, (self.motor[1],))
-            motor_read_thread = _thread.start_new(moterRaedThread, (self.motor[0],self.motor[1],self))
+            motor1_thread = _thread.start_new(motorThread, (self.motor[0],))
+            motor2_thread = _thread.start_new(motorThread, (self.motor[1],))
+            motor3_thread = _thread.start_new(motorThread, (self.motor[2],))
+            motor4_thread = _thread.start_new(motorThread, (self.motor[3],))
+            motor_read_thread = _thread.start_new(motorRaedThread, (self.motor[0],self.motor[1],self.motor[2],self.motor[3],self))
         except:
             print("thread creation failed! program exit!")
             exit(0)
@@ -55,33 +59,41 @@ class car(object):
     def enable(self):
         self.motor[0].motor_start()
         self.motor[1].motor_start()
+        self.motor[2].motor_start()
+        self.motor[3].motor_start()
         return True
 
     def disable(self):
         self.motor[0].motor_stop()
         self.motor[1].motor_stop()
+        self.motor[2].motor_stop()
+        self.motor[3].motor_stop()
         return True
 
     # According to the speed of the car, calculate the speed of the wheel
     def set_car_vel(self,v,w):
-        w1, w2 = self.cal_wheel_vel(v,w)
-        self.motor[0].set_speed = w1
-        self.motor[1].set_speed = w2
+        w_r, w_l = self.cal_wheel_vel(v,w)
+        self.motor[0].set_speed = w_r
+        self.motor[1].set_speed = w_l
+        self.motor[2].set_speed = w_r
+        self.motor[3].set_speed = w_l
         return True
    
     # Calculate wheel speed
     def cal_wheel_vel(self,v,w):
-        w1 = 2*v/self.diameter - w*self.distance/self.diameter
-        w2 = -(2*v/self.diameter + w*self.distance/self.diameter)
-        return [w1, w2]
+        w_r = 2*v/(2*self.diameter) + w*self.distance/(2*self.diameter)
+        w_l = -(2*v/(2*self.diameter) - w*self.distance/(2*self.diameter))
+        return [w_r, w_l]
     
     # Get the speed and speed of the car
     def get_car_status(self):
-        w1 = self.motor[0].rel_speed
-        w2 = self.motor[1].rel_speed
-        print("odom check", w1, w2)
-        w = (w1+w2)*self.diameter/2/self.diameter
-        v = (w1-w2)*self.diameter/2
+        odom_w_r = self.motor[0].rel_speed
+        odom_w_l = self.motor[1].rel_speed
+        #odom_w_r = self.motor[2].rel_speed
+        #odom_w_l = self.motor[3].rel_speed
+        print("odom check", odom_w_r, odom_w_l)
+        v = (odom_w_r+odom_w_l)*(self.diameter/2)
+        w = (odom_w_r-odom_w_l)*(self.diameter/self.distance)
         return [v,w]
 
     # Set vehicle odom information
@@ -109,6 +121,8 @@ class car(object):
     def run_mode(self):
         self.motor[0].motor_start()
         self.motor[1].motor_start()
+        self.motor[2].motor_start()
+        self.motor[3].motor_start()
         self.isRunMode = True
         print("diff_car go into the run mode")
 
@@ -121,6 +135,7 @@ def test_set_car_vel(v,w):
     wheel_diameter = 0.06
     wheel_distance = 0.3
     diff_car = car(wheel_diameter,wheel_distance)
+    print("HI")
     diff_car.run_mode()
     start = time.time()
     #a = SpeedMotor('/dev/ttyUSB0')
@@ -146,4 +161,4 @@ def test_car_config_mode():
 if __name__ == '__main__':
     #test_car_config_mode()
     #test_car_run_mode()
-    test_set_car_vel(15,0)
+    test_set_car_vel(7.5,0)
