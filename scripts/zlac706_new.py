@@ -1,5 +1,6 @@
-#!/usr/bin/env python
-# -*- coding:utf-8 -*-
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from __future__ import division
 import serial
 import time
@@ -37,8 +38,9 @@ class SpeedMotor:
     def motor_speed_set(self):
         #print("set motor speed", self.set_speed)
         a1 = 6
-        a4 = check_code(a1, self.set_speed)
-        self.serial.write(struct.pack(">BhB", int(a1), int(self.set_speed), int(a4)))
+        m_speed = self.set_speed * 16384 / 6000
+        a4 = check_code(a1, m_speed)
+        self.serial.write(struct.pack(">BhB", int(a1), int(m_speed), int(a4)))
 
     def set_status(self):
             self.serial.write(motor_status)
@@ -58,15 +60,22 @@ class SpeedMotor:
             n = self.serial.read(n) # read n bits of data
             s = [ord(x) for x in bytes(n)]
             #print(s)
+            #if len(s) == 32:
             for i in range(int(len(s) / 4)):
-                addr = s[4 * i]
-                if addr == 228:
-                    high_data = s[4 * i + 1]
-                    if high_data > 128:
-                        high_data = high_data - 256
-                    low_data = s[4 * i + 2]
-                    self.rel_speed = (high_data*256 + low_data) * 6000 / 16384
-                    #print(self.rel_speed)
+               addr = s[4 * i]
+               if addr == 228:
+                   high_data = s[4 * i + 1]
+                   low_data = s[4 * i + 2]
+                   #print(high_data, low_data)
+                   if high_data == 255 or high_data == 199:
+                       low_data -= 256
+                   if high_data == 1:
+                       low_data += 256
+                   if high_data == 254:
+                       low_data -= 512
+                   #print(high_data, low_data)
+                   self.rel_speed = (low_data) * 6000 / 16384
+                   #  print(self.rel_speed)
         '''
             for i in range(len(s)):
                 s[i] = s[i]

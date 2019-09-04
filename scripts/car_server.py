@@ -1,24 +1,12 @@
-#!/usr/bin/env python
-# -*-coding:UTF-8 -*-
-"""
-The car server file is the client class of the car class and performs the following functions:
-     - Open bus
-     - Pass bus to car class
-     - in car's run_mode mode
-         * listen for cmd_vel messages and execute
-         * odom information with new car : bus Get wheel information car According to wheel information, with new vehicle odom
-     - in car's config_mode mode
-         * Waiting state, no command is executed
-
-     The wheel is controlled using cmd_vel without action_server; therefore using a simple topic and service mechanism
-"""
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from car_control import car
-from zlac706 import SpeedMotor
 import rospy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
+from sensor_msgs.msg import LaserScan
 import tf
 
 import threading
@@ -27,13 +15,13 @@ try:
     import _thread
 except:
     import thread as _thread
-    
+
 mutex = threading.Lock()
 
 def odom_puber(odom_info,puber):
     msg = Odometry()
-    msg.header.frame_id = 'odom_link'
-    msg.child_frame_id = 'base_link'
+    msg.header.frame_id = 'odom'
+    msg.child_frame_id = 'base_footprint'
     br = tf.TransformBroadcaster()
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
@@ -47,21 +35,32 @@ def odom_puber(odom_info,puber):
         msg.pose.pose.orientation.y = odom_qua[1]
         msg.pose.pose.orientation.z = odom_qua[2]
         msg.pose.pose.orientation.w = odom_qua[3]
-        msg.twist.twist.linear.x = odom_info['v']
+        msg.twist.twist.linear.x = odom_info['vx']
+        msg.twist.twist.linear.y = odom_info['vy']
         msg.twist.twist.angular.z = odom_info['w']
         puber.publish(msg)
         br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),"base_link","odom_link")
         rate.sleep()
 
+def laser_callback(data):
+    distances = data.ranges
+    for distance in distances:
+        if distance > 0.05 and distance < 0.35:
+            print("stop : laserscan : obstacle is too close.",time.time())
+            pub_emergency = rospy.Publisher('/emergency_stop', String, queue_size=10)
+            pub_emergency.publish('1')
+            break
+
 def vel_callback(msg,arg):
     start = time.time()
     diff_car = arg[0]
-    #print(msg)
+    print(diff_car.motor[0].rel_speed, diff_car.motor[1].rel_speed)
     # Processing speed, depending on the release speed of /cmd_vel.
     if diff_car.isRunMode:
         v = msg.linear.x
         #v = 5  #rad/s
         w = msg.angular.z
+        #print(v, w)
         #w = 5
         # Use isSending to avoid the main thread calling the update function when the thread sends data, destroying the thread and calling the update function.
         # Since I don’t care, the sending is successful, so I decided here.
@@ -69,14 +68,17 @@ def vel_callback(msg,arg):
         #if  v !=0 or w !=0:
             #print("let's move the car")
             #mutex.acquire()
-        #print("v",v,"w",w)
+        if abs(diff_car.motor[0].rel_speed) > 50:
+            pub_emergency = rospy.Publisher('/emergency_stop', String, queue_size=10)
+            print("hi")
+            pub_emergency.publish('1')
+        #    rospy.signal_shutdown('Quit')
         diff_car.set_car_vel(v,w)
             #mutex.release()
         #diff_car.isSending = False
     #timepass = start - time.time()
     #print("time pass is:",timepass)
-        
- 
+
 
     # SetMode  未定义srv类型：其内容包括：
     # ---req    int request : run_mode:1   config_mode:0
@@ -118,7 +120,9 @@ if __name__ == '__main__':
 
     # Create a subscriber for cmd_vel
     rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,))
-    
+
+    rospy.Subscriber("/scan",LaserScan,laser_callback)
+
     try:
         odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))
     except :
@@ -129,10 +133,10 @@ if __name__ == '__main__':
 
     # mode service Thread
     # Create a service for external program to control the runmode or config mode of the program
-    _thread.start_new(mode_server,(diff_car,))
+    #_thread.start_new(mode_server,(diff_car,))
 
     i = 0
-    
+
     # Determine if car is in run_mode or config_mode
     while not rospy.is_shutdown():
         if diff_car.isRunMode:
@@ -155,5 +159,3 @@ if __name__ == '__main__':
                 #rospy.loginfo("car is in configure mode!")
             diff_car.update_status()
             #i = 0
-
-    
