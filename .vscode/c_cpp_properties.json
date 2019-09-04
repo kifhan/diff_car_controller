@@ -1,24 +1,29 @@
 {
-  "configurations": [
-    {
-      "browse": {
-        "databaseFilename": "",
-        "limitSymbolsToIncludedHeaders": true
-      },
-      "includePath": [
-        "/home/chase/catkin_wss/devel/include",
-        "/home/chase/catkin_ws/install_isolated/include",
-        "/home/chase/catkin_ws/devel/include",
-        "/opt/ros/melodic/include",
-        "/home/chase/catkin_wss/src/iai_kinect2/kinect2_bridge/include",
-        "/home/chase/catkin_wss/src/iai_kinect2/kinect2_calibration/include",
-        "/home/chase/catkin_wss/src/iai_kinect2/kinect2_registration/include",
-        "/home/chase/catkin_wss/src/librealsense/include",
-        "/home/chase/catkin_wss/src/pointcloud_to_laserscan/include",
-        "/home/chase/catkin_wss/src/realsense_ros/realsense_camera/include",
-        "/usr/include"
-      ],
-      "name": "Linux"
-    }
-  ]
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/chase/catkin_wss/devel/include",
+                "/home/chase/catkin_ws/install_isolated/include",
+                "/home/chase/catkin_ws/devel/include",
+                "/opt/ros/melodic/include",
+                "/home/chase/catkin_wss/src/iai_kinect2/kinect2_bridge/include",
+                "/home/chase/catkin_wss/src/iai_kinect2/kinect2_calibration/include",
+                "/home/chase/catkin_wss/src/iai_kinect2/kinect2_registration/include",
+                "/home/chase/catkin_wss/src/librealsense/include",
+                "/home/chase/catkin_wss/src/pointcloud_to_laserscan/include",
+                "/home/chase/catkin_wss/src/realsense_ros/realsense_camera/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
 }
