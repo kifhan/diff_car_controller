@@ -25,7 +25,7 @@ def motorRaedThread (motor1, motor2, motor3, motor4, car):
         motor2.read_motor()
         motor3.read_motor()
         motor4.read_motor()
-        car.set_odom()
+        #car.set_odom()
         time.sleep(0.1)
 
 class car(object):
@@ -73,10 +73,16 @@ class car(object):
     # According to the speed of the car, calculate the speed of the wheel
     def set_car_vel(self,v,w):
         w_r, w_l = self.cal_wheel_vel(v,w)
-        self.motor[0].set_speed = w_r
-        self.motor[1].set_speed = w_l
-        self.motor[2].set_speed = w_r
-        self.motor[3].set_speed = w_l
+        if w is not 0 and v == 0:
+            self.motor[0].set_speed = w_r * 1.2
+            self.motor[1].set_speed = w_l * 1.2
+            self.motor[2].set_speed = w_r * 0.6
+            self.motor[3].set_speed = w_l * 0.6
+        else:
+            self.motor[0].set_speed = w_r
+            self.motor[1].set_speed = w_l
+            self.motor[2].set_speed = w_r
+            self.motor[3].set_speed = w_l
         return True
    
     # Calculate wheel speed

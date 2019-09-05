@@ -5,9 +5,11 @@ from car_control import car
 import rospy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose2D
 from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
 import tf
+import math
 
 import threading
 import time
@@ -39,7 +41,7 @@ def odom_puber(odom_info,puber):
         msg.twist.twist.linear.y = odom_info['vy']
         msg.twist.twist.angular.z = odom_info['w']
         puber.publish(msg)
-        br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),"base_link","odom_link")
+        br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),msg.child_frame_id,msg.header.frame_id)
         rate.sleep()
 
 def laser_callback(data):
@@ -79,6 +81,14 @@ def vel_callback(msg,arg):
     #timepass = start - time.time()
     #print("time pass is:",timepass)
 
+def pose_callback(msg,arg):
+    odom_info = arg[0]
+    odom_info['vx'] = msg.x - odom_info['x']
+    odom_info['vy'] = msg.y - odom_info['y']
+    odom_info['w'] = msg.theta - odom_info['theta']
+    odom_info['x'] = msg.x
+    odom_info['y'] = msg.y
+    odom_info['theta'] = msg.theta
 
     # SetMode  未定义srv类型：其内容包括：
     # ---req    int request : run_mode:1   config_mode:0
@@ -120,8 +130,8 @@ if __name__ == '__main__':
 
     # Create a subscriber for cmd_vel
     rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,))
-
     rospy.Subscriber("/scan",LaserScan,laser_callback)
+    rospy.Subscriber("/pose2D",Pose2D,pose_callback,(diff_car.odom,))
 
     try:
         odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))
