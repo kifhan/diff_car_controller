@@ -11,7 +11,7 @@ try:
     import _thread
 except:
     import thread as _thread
-    
+
 mutex = threading.Lock()
 
 def motorThread (motor_obj):
@@ -73,12 +73,13 @@ class car(object):
     # According to the speed of the car, calculate the speed of the wheel
     def set_car_vel(self,v,w):
         w_r, w_l = self.cal_wheel_vel(v,w)
-        if w is not 0 and v == 0:
-            self.motor[0].set_speed = w_r * 1.2
-            self.motor[1].set_speed = w_l * 1.2
-            self.motor[2].set_speed = w_r * 0.6
-            self.motor[3].set_speed = w_l * 0.6
-        else:
+#        if w is not 0 and v == 0:
+#            self.motor[0].set_speed = w_r * 0.0
+#            self.motor[1].set_speed = w_l * 0.0
+#            self.motor[2].set_speed = w_r * 1.2
+#            self.motor[3].set_speed = w_l * 1.2
+#        else:
+        if True:
             self.motor[0].set_speed = w_r
             self.motor[1].set_speed = w_l
             self.motor[2].set_speed = w_r
@@ -87,8 +88,8 @@ class car(object):
    
     # Calculate wheel speed
     def cal_wheel_vel(self,v,w):
-        w_r = 2*v/(2*self.diameter) + w*self.distance/(2*self.diameter)
-        w_l = -(2*v/(2*self.diameter) - w*self.distance/(2*self.diameter))
+        w_l = 2*v/(2*self.diameter) + w*self.distance/(2*self.diameter)
+        w_r = -(2*v/(2*self.diameter) - w*self.distance/(2*self.diameter))
         return [w_r, w_l]
     
     # Get the speed and speed of the car
@@ -148,7 +149,7 @@ class car(object):
     def update_status(self):
         None
         #self.set_odom()
-                
+
 def test_set_car_vel(v,w):
     wheel_diameter = 0.06
     wheel_distance = 0.3

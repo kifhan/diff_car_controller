@@ -25,7 +25,7 @@ def odom_puber(odom_info,puber):
     msg.header.frame_id = 'odom'
     msg.child_frame_id = 'base_footprint'
     br = tf.TransformBroadcaster()
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(20)
     while not rospy.is_shutdown():
         msg.header.seq = msg.header.seq + 1
         msg.header.stamp = rospy.Time.now()
@@ -41,7 +41,7 @@ def odom_puber(odom_info,puber):
         msg.twist.twist.linear.y = odom_info['vy']
         msg.twist.twist.angular.z = odom_info['w']
         puber.publish(msg)
-        br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),'base_footprint','odom')
+        br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),base_footprint,msg.header.frame_id)
         rate.sleep()
 
 def laser_callback(data):
