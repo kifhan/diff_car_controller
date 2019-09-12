@@ -1,3 +1,5 @@
+# Test script for subscribe /scan topic...
+
 import time
 import rospy
 from sensor_msgs.msg import LaserScan	

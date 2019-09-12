@@ -1,0 +1,10 @@
+<launch>
+
+  <!-- GoWithRobo Car Wheel Controller Server With odom publisher. -->
+  <node pkg="diff_car_controller" type="car_server.py" name="car_control_server" output="screen">
+    <param name="wheel_diameter" value="0.13"/>
+    <param name="wheel_distance" value="0.27"/>
+    <param name="publish_tf" value="false"/>
+  </node>
+
+</launch>

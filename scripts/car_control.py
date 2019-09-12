@@ -29,9 +29,10 @@ def motorRaedThread (motor1, motor2, motor3, motor4, car):
         time.sleep(0.1)
 
 class car(object):
-    def __init__(self,wheel_diameter,wheel_distance):
+    def __init__(self,wheel_diameter,wheel_distance,publish_tf):
         self.diameter = wheel_diameter
         self.distance = wheel_distance
+        self.publish_tf = publish_tf
         self.odom = {'x':0,'y':0,'theta':0,'vx':0,'vy':0,'w':0}
         self.isRunMode = False
         self.isSending = False
@@ -150,6 +151,9 @@ class car(object):
         None
         #self.set_odom()
 
+# --------------------------
+#   Test Car Script Below
+# --------------------------
 def test_set_car_vel(v,w):
     wheel_diameter = 0.06
     wheel_distance = 0.3
