@@ -56,7 +56,7 @@ def vel_callback(msg,arg):
             print("emergency: car moving too fast. ", abs(diff_car.motor[0].rel_speed))
             pub_emergency.publish('1')
             # rospy.signal_shutdown("emergency: car moving too fast.")
-        diff_car.set_car_vel(v,w)
+        diff_car.set_car_vel(v*1.12,w)
     #timepass = start - time.time()
     #print("time pass is:",timepass)
 
