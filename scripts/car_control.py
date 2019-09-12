@@ -28,7 +28,7 @@ def motorRaedThread (motor1, motor2, motor3, motor4, car):
         #car.set_odom()
         time.sleep(0.1)
 
-class car(object):
+class Car(object):
     def __init__(self,wheel_diameter,wheel_distance,publish_tf):
         self.diameter = wheel_diameter
         self.distance = wheel_distance
