@@ -85,7 +85,7 @@ if __name__ == '__main__':
     odom_publisher = rospy.Publisher('/odom',Odometry,queue_size=10)
 
     # Create a subscriber for cmd_vel
-    rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,))
+    rospy.Subscriber('/manual_vel',Twist,vel_callback,(diff_car,))
 
     try:
         odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))
