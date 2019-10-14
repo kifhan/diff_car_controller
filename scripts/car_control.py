@@ -40,10 +40,10 @@ class Car(object):
         self.current_time = time.time()
         self.last_time = self.current_time
         self.motor = []
-        self.motor.append(SpeedMotor('/dev/ttyUSB0'))
+        self.motor.append(SpeedMotor('/dev/ttyUSB3'))
         self.motor.append(SpeedMotor('/dev/ttyUSB1'))
         self.motor.append(SpeedMotor('/dev/ttyUSB2'))
-        self.motor.append(SpeedMotor('/dev/ttyUSB3'))
+        self.motor.append(SpeedMotor('/dev/ttyUSB0'))
         self.enable()
 
         try:

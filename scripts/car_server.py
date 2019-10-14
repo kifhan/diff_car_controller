@@ -47,6 +47,7 @@ def odom_puber(odom_info,puber):
 def vel_callback(msg,arg):
     diff_car = arg[0]
     mode = arg[1]
+    print "vel: %s mode: %s" % (mode,diff_car.modeTopic)
     # Processing speed, depending on the release speed of vel topic.
     if diff_car.isRunMode and diff_car.modeTopic == mode:
         v = msg.linear.x
@@ -58,27 +59,18 @@ def vel_callback(msg,arg):
         #    rospy.signal_shutdown("emergency: car moving too fast.")
         diff_car.set_car_vel(v*1.12,w)
 
-def set_mode_callback(req,diff_car):
-    if req.request == 'cmd':
+def mode_callback(msg,arg):
+    diff_car = arg[0]
+    if msg.data == 'cmd':
         diff_car.modeTopic = 'cmd'
-        if not diff_car.isRunMode():
+        if not diff_car.isRunMode:
             diff_car.run_mode()
-        return SetModeResponse(True)
-    elif req.request == 'manual':
+    elif msg.data == 'manual':
         diff_car.modeTopic = 'manual'
-        if not diff_car.isRunMode():
+        if not diff_car.isRunMode:
             diff_car.run_mode()
-        return SetModeResponse(True)
     else:
         diff_car.config_mode()
-        return SetModeResponse(True)
-    return SetModeResponse(False)
-
-def mode_server(args):
-    diff_car = args
-    s = rospy.Service("set_mode_server",SetMode,set_mode_callback,(diff_car))
-    rospy.loginfo("mode server opened.")
-    rospy.spin()
 
 if __name__ == '__main__':
     # Initialize node
@@ -108,6 +100,8 @@ if __name__ == '__main__':
     rospy.Subscriber('/manual_vel',Twist,vel_callback,(diff_car,'manual',))
     rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,'cmd',))
 
+    rospy.Subscriber('/car_mode',String,mode_callback,(diff_car,))
+
     try:
         odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))
     except :
@@ -115,8 +109,6 @@ if __name__ == '__main__':
         exit(0)
     finally:
         rospy.loginfo("odom thread created！ begin to pub odom info and transform.")
-
-    _thread.start_new(mode_server,(diff_car,))
 
     # Determine if car is in run_mode or config_mode
     rate = rospy.Rate(10)
