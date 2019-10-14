@@ -44,10 +44,11 @@ def odom_puber(odom_info,puber):
             br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),'base_footprint','odom')
         rate.sleep()
 
-def vel_callback(msg,mode,arg):
+def vel_callback(msg,arg):
     diff_car = arg[0]
+    mode = arg[1]
     # Processing speed, depending on the release speed of vel topic.
-    if diff_car.isRunMode and diff_car.modeTopic == modeTopic:
+    if diff_car.isRunMode and diff_car.modeTopic == mode:
         v = msg.linear.x
         w = msg.angular.z
         #if abs(diff_car.motor[0].rel_speed) > 100:
