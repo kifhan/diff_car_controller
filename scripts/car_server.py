@@ -8,6 +8,7 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 import tf
 import math
+import diff_car_controller.srv import *
 
 import threading
 import time
@@ -43,22 +44,40 @@ def odom_puber(odom_info,puber):
             br.sendTransform((odom_info['x'],odom_info['y'],0),odom_qua,rospy.Time.now(),'base_footprint','odom')
         rate.sleep()
 
-def vel_callback(msg,arg):
-    #start = time.time()
+def vel_callback(msg,mode,arg):
     diff_car = arg[0]
-    # Processing speed, depending on the release speed of /cmd_vel.
-    if diff_car.isRunMode:
+    # Processing speed, depending on the release speed of vel topic.
+    if diff_car.isRunMode and diff_car.modeTopic == modeTopic:
         v = msg.linear.x
         w = msg.angular.z
-        # print(diff_car.motor[0].rel_speed, diff_car.motor[1].rel_speed)
-        if abs(diff_car.motor[0].rel_speed) > 100:
-            pub_emergency = rospy.Publisher('/emergency_stop', String, queue_size=10)
-            print("emergency: car moving too fast. ", abs(diff_car.motor[0].rel_speed))
-            pub_emergency.publish('1')
-            # rospy.signal_shutdown("emergency: car moving too fast.")
+        #if abs(diff_car.motor[0].rel_speed) > 100:
+        #    pub_emergency = rospy.Publisher('/emergency_stop', String, queue_size=10)
+        #    print("emergency: car moving too fast. ", abs(diff_car.motor[0].rel_speed))
+        #    pub_emergency.publish('1')
+        #    rospy.signal_shutdown("emergency: car moving too fast.")
         diff_car.set_car_vel(v*1.12,w)
-    #timepass = start - time.time()
-    #print("time pass is:",timepass)
+
+def set_mode_callback(req,diff_car):
+    if req.request == 'cmd':
+        diff_car.modeTopic = 'cmd'
+        if not diff_car.isRunMode():
+            diff_car.run_mode()
+        return SetModeResponse(True)
+    elif req.request == 'manual':
+        diff_car.modeTopic = 'manual'
+        if not diff_car.isRunMode():
+            diff_car.run_mode()
+        return SetModeResponse(True)
+    else:
+        diff_car.config_mode()
+        return SetModeResponse(True)
+    return SetModeResponse(False)
+
+def mode_server(args):
+    diff_car = args
+    s = rospy.Service("set_mode_server",SetMode,set_mode_callback,(diff_car))
+    rospy.loginfo("mode server opened.")
+    rospy.spin()
 
 if __name__ == '__main__':
     # Initialize node
@@ -85,7 +104,8 @@ if __name__ == '__main__':
     odom_publisher = rospy.Publisher('/odom',Odometry,queue_size=10)
 
     # Create a subscriber for cmd_vel
-    rospy.Subscriber('/manual_vel',Twist,vel_callback,(diff_car,))
+    rospy.Subscriber('/manual_vel',Twist,vel_callback,(diff_car,'manual',))
+    rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,'cmd',))
 
     try:
         odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))
@@ -95,7 +115,10 @@ if __name__ == '__main__':
     finally:
         rospy.loginfo("odom thread created！ begin to pub odom info and transform.")
 
+    _thread.start_new(mode_server,(diff_car,))
+
     # Determine if car is in run_mode or config_mode
+    rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         if diff_car.isRunMode:
             #mutex.acquire()
@@ -104,5 +127,6 @@ if __name__ == '__main__':
             #rospy.spinOnce()
         else:
             diff_car.update_status()
+        rate.sleep()
 
     rospy.spin()

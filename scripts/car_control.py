@@ -35,6 +35,7 @@ class Car(object):
         self.publish_tf = publish_tf
         self.odom = {'x':0,'y':0,'theta':0,'vx':0,'vy':0,'w':0}
         self.isRunMode = False
+        self.modeTopic = 'cmd'
         self.isSending = False
         self.current_time = time.time()
         self.last_time = self.current_time
@@ -135,6 +136,8 @@ class Car(object):
     def config_mode(self):
         self.motor[0].motor_stop()
         self.motor[1].motor_stop()
+        self.motor[2].motor_stop()
+        self.motor[3].motor_stop()
         self.isRunMode = False
 
     # Enter run_mode, you can speed control
