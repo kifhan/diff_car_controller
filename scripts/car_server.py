@@ -6,6 +6,8 @@ import rospy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
+from sensor_msgs.msg import LaserScan
+
 import tf
 import math
 from diff_car_controller.srv import *
@@ -47,7 +49,9 @@ def odom_puber(odom_info,puber):
 def vel_callback(msg,arg):
     diff_car = arg[0]
     mode = arg[1]
-    print "vel: %s mode: %s" % (mode,diff_car.modeTopic)
+    if diff_car.modeTopic != diff_car.prevmode:
+        print "vel: %s mode: %s" % (mode,diff_car.modeTopic)
+        diff_car.prevmode = diff_car.modeTopic
     # Processing speed, depending on the release speed of vel topic.
     if diff_car.isRunMode and diff_car.modeTopic == mode:
         v = msg.linear.x
@@ -58,6 +62,63 @@ def vel_callback(msg,arg):
         #    pub_emergency.publish('1')
         #    rospy.signal_shutdown("emergency: car moving too fast.")
         diff_car.set_car_vel(v*1.12,w)
+
+def scan_callback(msg, arg):
+    diff_car = arg[0]
+    if not diff_car.isRunMode:
+        return
+    printvalue = ' '
+    i = 0
+    fall_flag = False
+    for point in msg.ranges:
+        if i > 5 and i <= 180:
+            trad = math.radians(45 - 0 - 0.25 * (i-0))
+            tdist = 0.23 / math.cos(trad)
+            if point > 0.1 and point < tdist:
+                fall_flag = True
+                printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
+                break
+        elif  i <= 290:
+            trad = math.radians(72.5 - 72.5 + 0.25 * (i-181))
+            tdist = 0.23 / math.cos(trad)
+            if point > 0.1 and point < tdist:
+                fall_flag = True
+                printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
+                break
+        elif i <= 540:
+            trad = math.radians(135 - 72.5 - 0.25 * (i-291))
+            tdist = 0.12 / math.cos(trad)
+            if point > 0.1 and point < tdist:
+                fall_flag = True
+                printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
+                break
+        elif  i <= 790:
+            trad = math.radians(207.5 - 207.5 + 0.25 * (i-541))
+            tdist = 0.12 / math.cos(trad)
+            if point > 0.1 and point < tdist:
+                fall_flag = True
+                printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
+                break
+        elif  i <= 900:
+            trad = math.radians(235 - 207.5 - 0.25 * (i-791))
+            tdist = 0.23 / math.cos(trad)
+            if point > 0.1 and point < tdist:
+                fall_flag = True
+                printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
+                break
+        elif i <= 1075:
+            trad = math.radians(270 - 270 + 0.25 * (i-901))
+            tdist = 0.23 / math.cos(trad)
+            if point > 0.1 and point < tdist:
+                fall_flag = True
+                printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
+                break
+        i = i + 1
+    if fall_flag:
+        diff_car.set_car_vel(0,0)
+        diff_car.modeTopic = 'config'
+        diff_car.config_mode()
+        print 'CONFIG MODE! point: ' + printvalue
 
 def mode_callback(msg,arg):
     diff_car = arg[0]
@@ -70,6 +131,7 @@ def mode_callback(msg,arg):
         if not diff_car.isRunMode:
             diff_car.run_mode()
     else:
+        diff_car.modeTopic = 'config'
         diff_car.config_mode()
 
 if __name__ == '__main__':
@@ -101,6 +163,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,'cmd',))
 
     rospy.Subscriber('/car_mode',String,mode_callback,(diff_car,))
+    rospy.Subscriber("/scan", LaserScan, scan_callback,(diff_car,))
 
     try:
         odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))

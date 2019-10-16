@@ -36,6 +36,7 @@ class Car(object):
         self.odom = {'x':0,'y':0,'theta':0,'vx':0,'vy':0,'w':0}
         self.isRunMode = False
         self.modeTopic = 'cmd'
+        self.prevmode = 'cmd'
         self.isSending = False
         self.current_time = time.time()
         self.last_time = self.current_time
