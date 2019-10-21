@@ -56,16 +56,15 @@ def vel_callback(msg,arg):
     if diff_car.isRunMode and diff_car.modeTopic == mode:
         v = msg.linear.x
         w = msg.angular.z
-        #if abs(diff_car.motor[0].rel_speed) > 100:
-        #    pub_emergency = rospy.Publisher('/emergency_stop', String, queue_size=10)
-        #    print("emergency: car moving too fast. ", abs(diff_car.motor[0].rel_speed))
-        #    pub_emergency.publish('1')
-        #    rospy.signal_shutdown("emergency: car moving too fast.")
         diff_car.set_car_vel(v*1.12,w)
+    elif diff_car.isRunMode and diff_car.modeTopic == 'manual_nostop' and mode == 'manual':
+        v = msg.linear.x
+        w = msg.angular.z
+        diff_car.set_car_vel(v*0.9,w)
 
 def scan_callback(msg, arg):
     diff_car = arg[0]
-    if not diff_car.isRunMode:
+    if not diff_car.isRunMode or diff_car.modeTopic == 'manual_nostop':
         return
     printvalue = ' '
     i = 0
@@ -73,43 +72,43 @@ def scan_callback(msg, arg):
     for point in msg.ranges:
         if i > 5 and i <= 180:
             trad = math.radians(45 - 0 - 0.25 * (i-0))
-            tdist = 0.23 / math.cos(trad)
-            if point > 0.1 and point < tdist:
+            tdist = 0.20 / math.cos(trad)
+            if point > 0.11 and point < tdist:
                 fall_flag = True
                 printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
                 break
         elif  i <= 290:
             trad = math.radians(72.5 - 72.5 + 0.25 * (i-181))
-            tdist = 0.23 / math.cos(trad)
-            if point > 0.1 and point < tdist:
+            tdist = 0.20 / math.cos(trad)
+            if point > 0.11 and point < tdist:
                 fall_flag = True
                 printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
                 break
         elif i <= 540:
             trad = math.radians(135 - 72.5 - 0.25 * (i-291))
-            tdist = 0.12 / math.cos(trad)
-            if point > 0.1 and point < tdist:
+            tdist = 0.11 / math.cos(trad)
+            if point > 0.11 and point < tdist:
                 fall_flag = True
                 printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
                 break
         elif  i <= 790:
             trad = math.radians(207.5 - 207.5 + 0.25 * (i-541))
-            tdist = 0.12 / math.cos(trad)
-            if point > 0.1 and point < tdist:
+            tdist = 0.11 / math.cos(trad)
+            if point > 0.11 and point < tdist:
                 fall_flag = True
                 printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
                 break
         elif  i <= 900:
             trad = math.radians(235 - 207.5 - 0.25 * (i-791))
-            tdist = 0.23 / math.cos(trad)
-            if point > 0.1 and point < tdist:
+            tdist = 0.20 / math.cos(trad)
+            if point > 0.11 and point < tdist:
                 fall_flag = True
                 printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
                 break
         elif i <= 1075:
             trad = math.radians(270 - 270 + 0.25 * (i-901))
-            tdist = 0.23 / math.cos(trad)
-            if point > 0.1 and point < tdist:
+            tdist = 0.20 / math.cos(trad)
+            if point > 0.11 and point < tdist:
                 fall_flag = True
                 printvalue = str(i) + ' ' + str(point) + ' tdist: ' + str(tdist)
                 break
@@ -128,6 +127,10 @@ def mode_callback(msg,arg):
             diff_car.run_mode()
     elif msg.data == 'manual':
         diff_car.modeTopic = 'manual'
+        if not diff_car.isRunMode:
+            diff_car.run_mode()
+    elif msg.data == 'manual_nostop':
+        diff_car.modeTopic = 'manual_nostop'
         if not diff_car.isRunMode:
             diff_car.run_mode()
     else:
@@ -163,7 +166,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/cmd_vel',Twist,vel_callback,(diff_car,'cmd',))
 
     rospy.Subscriber('/car_mode',String,mode_callback,(diff_car,))
-    rospy.Subscriber("/scan", LaserScan, scan_callback,(diff_car,))
+    rospy.Subscriber("/scan_filtered", LaserScan, scan_callback,(diff_car,))
 
     try:
         odom_thread = _thread.start_new(odom_puber, (diff_car.odom, odom_publisher))
